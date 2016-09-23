@@ -4,3 +4,9 @@
 *.mex*
 .DS_Store
 mexopts.sh
+
+# MATLAB Libraries
+_matlab_/
+
+# BIMI Example outputs
+bimi-example/build/

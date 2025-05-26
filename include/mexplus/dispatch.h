@@ -60,7 +60,7 @@
 #ifndef INCLUDE_MEXPLUS_DISPATCH_H_
 #define INCLUDE_MEXPLUS_DISPATCH_H_
 
-#include <mex.h>
+#include <include/mex.h>
 #include <map>
 #include <memory>
 #include <string>
@@ -366,9 +366,7 @@ void mexFunction(int nlhs, mxArray *plhs[], \
   if (nrhs < 1 || !mxIsChar(prhs[0])) \
     mexErrMsgIdAndTxt("mexplus:dispatch:argumentError", \
                       "Invalid argument: missing operation."); \
-  std::string operation_name(\
-      mxGetChars(prhs[0]), \
-      mxGetChars(prhs[0]) + mxGetNumberOfElements(prhs[0])); \
+  std::string operation_name(mxArrayToString(prhs[0])); \
   std::unique_ptr<mexplus::Operation> operation(\
       mexplus::OperationFactory::create(operation_name)); \
   if (operation.get() == NULL) { \

@@ -50,7 +50,7 @@
 #ifndef INCLUDE_MEXPLUS_MXARRAY_H_
 #define INCLUDE_MEXPLUS_MXARRAY_H_
 
-#include <mex.h>
+#include <include/mex.h>
 #include <algorithm>
 #include <cstdint>
 #include <set>
@@ -931,8 +931,14 @@ class MxArray {
                          R
                        >::type* value) {
     if (mxIsComplex(array)) {
-      T real_part = *(reinterpret_cast<T*>(mxGetPr(array)) + index);
-      T imag_part = *(reinterpret_cast<T*>(mxGetPi(array)) + index);
+      #if MX_HAS_INTERLEAVED_COMPLEX
+        mxComplexDouble *cd = mxGetComplexDoubles(array);
+        T real_part = *(reinterpret_cast<T*>(&(cd->real)) + index);
+        T imag_part = *(reinterpret_cast<T*>(&(cd->imag)) + index);
+      #else
+        T real_part = *(reinterpret_cast<T*>(mxGetPr(array)) + index);
+        T imag_part = *(reinterpret_cast<T*>(mxGetPi(array)) + index);
+      #endif
       *value = std::abs(std::complex<R>(real_part, imag_part));
     } else {
       *value = *(reinterpret_cast<T*>(mxGetData(array)) + index);
@@ -994,7 +1000,7 @@ class MxArray {
    */
   #pragma warning( push )
   #ifdef _MSC_VER
-  #pragma warning( disable: 4244 4800 )
+  #pragma warning( disable: 4244 4267 4800 )
   #endif
   template <typename T, typename R>
   static void assignTo(const mxArray* array,
@@ -1009,8 +1015,14 @@ class MxArray {
       T* data_pointer = reinterpret_cast<T*>(mxGetData(array));
       value->assign(data_pointer, data_pointer + array_size);
     } else {
-      T* real_part = reinterpret_cast<T*>(mxGetPr(array));
-      T* imag_part = reinterpret_cast<T*>(mxGetPi(array));
+      #if MX_HAS_INTERLEAVED_COMPLEX
+        mxComplexDouble *cd = mxGetComplexDoubles(array);
+        T* real_part = reinterpret_cast<T*>(&(cd->real));
+        T* imag_part = reinterpret_cast<T*>(&(cd->imag));
+      #else
+        T* real_part = reinterpret_cast<T*>(mxGetPr(array));
+        T* imag_part = reinterpret_cast<T*>(mxGetPi(array));
+      #endif
       value->resize(array_size);
       for (mwSize i = 0; i < array_size; ++i) {
         double mag = std::abs(std::complex<double>(
@@ -1098,8 +1110,14 @@ class MxArray {
                            T
                          >::type& value) {
     if (mxIsComplex(array)) {
-      *(reinterpret_cast<R*>(mxGetPr(array)) + index) = value;
-      *(reinterpret_cast<R*>(mxGetPi(array)) + index) = 0.0;
+      #if MX_HAS_INTERLEAVED_COMPLEX
+        mxComplexDouble *cd = mxGetComplexDoubles(array);
+        *(reinterpret_cast<R*>(&(cd->real)) + index) = value;
+        *(reinterpret_cast<R*>(&(cd->imag)) + index) = 0.0;
+      #else
+        *(reinterpret_cast<R*>(mxGetPr(array)) + index) = value;
+        *(reinterpret_cast<R*>(mxGetPi(array)) + index) = 0.0;
+      #endif
     } else {
       *(reinterpret_cast<R*>(mxGetData(array)) + index) = value;
     }
@@ -1134,7 +1152,6 @@ class MxArray {
                              >::type& value) {
     *(mxGetChars(array) + index) = value;  // whoever needs this...
   }
-  #pragma warning( pop )
   template <typename T>
   static void assignCharFrom(mxArray* array,
                              mwIndex index,
@@ -1146,6 +1163,7 @@ class MxArray {
     *(mxGetChars(array) + index) = reinterpret_cast<const typename
         std::make_unsigned<T>::type&>(value);
   }
+  #pragma warning( pop )
   template <typename T>
   static void assignCharFrom(mxArray* array,
                              mwIndex index,
